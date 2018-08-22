@@ -75,7 +75,7 @@ class LetterOfCredit extends Component {
     axios.get(this.config.restServer.httpURL+'/system/historian')
     .then((response) => {
       let relevantTransactions = [];
-      let transactionTypes = ["InitialApplication", "Approve", "Reject", "ShipProduct", "ReceiveProduct", "ReadyForPayment", "Close"];
+      let transactionTypes = ["InitialApplication", "Reject", "ShipProduct", "ReceiveProduct"];
       response.data.forEach((i) => {
         let transactionLetter = ((i.eventsEmitted.length) ? decodeURIComponent(i.eventsEmitted[0].loc.split("#")[1]) : undefined);
         let longName = i.transactionType.split(".")
@@ -116,10 +116,7 @@ class LetterOfCredit extends Component {
     // work out what transaction will be made if the yes button is clicked
     const txTypes = {
       CREATE: "CREATE",
-      APPROVE: "APPROVE",
-      REJECT: "REJECT",
-      PAY: "PAY",
-      CLOSE: "CLOSE"
+      REJECT: "REJECT"
     }
 
     let callback;
@@ -128,20 +125,10 @@ class LetterOfCredit extends Component {
         this.hideModal();
         this.createLOC(this.props.productDetails.type, this.props.productDetails.quantity, this.props.productDetails.pricePerUnit, this.props.rules)
       };
-    } else if (tx === txTypes.APPROVE) {
-      callback = () => {
-        this.hideModal();
-        this.approveLOC(this.state.letter.letterId, this.state.user)
-      };
     } else if (tx === txTypes.REJECT) {
       callback = () => {
         this.hideModal();
         this.rejectLOC(this.state.letter.letterId)
-      }
-    } else if (tx === txTypes.PAY) {
-      callback = () => {
-        this.hideModal();
-        this.payLOC(this.state.letter.letterId)
       }
     } else {
       callback = () => {
@@ -187,8 +174,8 @@ class LetterOfCredit extends Component {
     axios.post(this.config.restServer.httpURL+'/InitialApplication', {
       "$class": "org.example.loc.InitialApplication",
       "letterId": ("L" + currentTime),
-      "applicant": "resource:org.example.loc.Customer#alice",
-      "beneficiary": "resource:org.example.loc.Customer#bob",
+      "charge": "resource:org.example.loc.Customer#alice",
+      "payment": "resource:org.example.loc.Customer#bob",
       "rules": this.createRules(),
       "productDetails": {
         "$class": "org.example.loc.ProductDetails",
@@ -214,35 +201,6 @@ class LetterOfCredit extends Component {
     });
   }
 
-  approveLOC(letterId, approvingParty) {
-    let resourceURL = "resource:org.example.loc.Customer#";
-
-    if (approvingParty === 'ella' || approvingParty === 'matias') {
-      resourceURL = "resource:org.example.loc.BankEmployee#";
-    }
-
-    if(!this.state.letter.approval.includes(this.state.user)) {
-      this.setState({
-        disableButtons: true
-      });
-      let letter = "resource:org.example.loc.LetterOfCredit#" + letterId;
-      axios.post(this.config.restServer.httpURL+'/Approve', {
-        "$class": "org.example.loc.Approve",
-        "loc": letter,
-        "approvingParty": resourceURL+approvingParty
-      })
-      .then(() => {
-        this.setState({
-          disableButtons: false
-        });
-        this.handleOnClick(this.state.user);
-      })
-      .catch(error => {
-        console.log(error);
-      });
-    }
-  }
-
   rejectLOC(letterId) {
     this.setState({
       disableButtons: true
@@ -264,75 +222,16 @@ class LetterOfCredit extends Component {
     });
   }
 
-  payLOC(letterId) {
-    this.setState({
-      disableButtons: true
-    });
-    let letter = "resource:org.example.loc.LetterOfCredit#" + letterId;
-    axios.post(this.config.restServer.httpURL+'/ReadyForPayment', {
-      "$class" : "org.example.loc.ReadyForPayment",
-      "loc": letter
-    })
-    .then(() => {
-      this.setState({
-        disableButtons: false
-      });
-      this.handleOnClick(this.state.user);
-    })
-    .catch(error => {
-      console.log(error);
-    });
-  }
-
-  closeLOC(letterId) {
-    this.setState({
-      disableButtons: true
-    });
-    let letter = "resource:org.example.loc.LetterOfCredit#" + letterId;
-    axios.post(this.config.restServer.httpURL+'/Close', {
-      "$class": "org.example.loc.Close",
-      "loc": letter,
-      "closeReason": "Letter has been completed."
-    })
-    .then(() => {
-      this.setState({
-        disableButtons: false
-      });
-      this.handleOnClick(this.state.user);
-    })
-    .catch(error => {
-      console.log(error);
-    })
-  }
-
   render() {
     if (this.state.redirect) {
       return <Redirect push to={"/" + this.state.redirectTo} />;
     }
 
     let activeStep = 0;
-    if (this.state.letter.status === 'AWAITING_APPROVAL') {
-      if (!this.state.letter.approval.includes('resource:org.example.loc.BankEmployee#matias')) {
-
-        activeStep = 1;
-      }
-      else if (!this.state.letter.approval.includes('resource:org.example.loc.BankEmployee#ella')) {
-        activeStep = 2;
-      }
-      else if (!this.state.letter.approval.includes('resource:org.example.loc.Customer#bob')) {
-        activeStep = 3;
-      }
-    }
-    else if (this.state.letter.status === 'APPROVED'){
-        activeStep = 4;
-    } else if (this.state.letter.status === 'SHIPPED') {
-      activeStep = 5;
+    if (this.state.letter.status === 'SHIPPED') {
+      activeStep = 1;
     } else if (this.state.letter.status === 'RECEIVED'){
-      activeStep = 6;
-    } else if (this.state.letter.status === 'READY_FOR_PAYMENT'){
-      activeStep = 7;
-    } else if (this.state.letter.status === 'CLOSED'){
-      activeStep = 8;
+      activeStep = 2;
     }
 
     let productDetails = this.props.productDetails;
@@ -345,28 +244,10 @@ class LetterOfCredit extends Component {
         pricePerUnit: this.state.letter.productDetails.pricePerUnit
       };
       rules = this.state.letter.rules;
-      let isAwaitingApproval = (
-        this.state.letter.status === 'AWAITING_APPROVAL' &&
-         (!this.state.letter.approval.includes('resource:org.example.loc.Customer#'+this.state.user) &&
-         (!this.state.letter.approval.includes('resource:org.example.loc.BankEmployee#'+this.state.user)))
-      );
-      if (isAwaitingApproval) {
-        buttonJSX = (
-          <div class="actions">
-            <button disabled={this.state.disableButtons} onClick={() => {this.showModal('REJECT')}}>I reject the application</button>
-            <button disabled={this.state.disableButtons} onClick={() => {this.showModal('APPROVE')}}>I accept the application</button>
-          </div>
-        );
-      } else if (this.state.letter.status === 'RECEIVED' && this.state.user === 'matias') {
+	  if (this.state.letter.status === 'RECEIVED') {
         buttonJSX = (
           <div class="actions">
             <button disabled={this.state.disableButtons} onClick={() => {this.showModal('PAY')}}>Ready for Payment</button>
-          </div>
-        );
-      } else if (this.state.letter.status === 'READY_FOR_PAYMENT' && this.state.user === 'ella') {
-        buttonJSX = (
-          <div class="actions">
-            <button disabled={this.state.disableButtons} onClick={() => {this.showModal('CLOSE')}}>Close this Letter of Credit</button>
           </div>
         );
       } else {
@@ -381,10 +262,8 @@ class LetterOfCredit extends Component {
     }
 
     let username = (this.state.user.charAt(3) === 'i') ? 'Matías' : this.state.user.charAt(0).toUpperCase() + this.state.user.slice(1);
-    if (username === 'Alice') username += ' - Applicant';
-    else if (username === 'Matías') username += ' - Issuing Bank';
-    else if (username === 'Ella') username += ' - Exporting Bank';
-    else username += ' - Beneficiary';
+    if (username === 'Alice') username += ' - Charge';
+    else username += ' - Payment';
 
     if (!this.state.disableButtons) {
       return (
@@ -400,11 +279,11 @@ class LetterOfCredit extends Component {
           <table className="contentTable">
             <tr>
               <td> <h1>Contract Details</h1> </td>
-              <td colspan="2"> <Stepper steps= {['Letter Application','BoD\'s Approval','EB\'s Approval','Bob\'s Approval','Goods Shipped','Shipment Accepted','Payment Made','Letter Closed']} activeStep={activeStep}/> </td>  
+              <td colspan="2"> <Stepper steps= {['Letter Application','Goods Shipped','Shipment Accepted']} activeStep={activeStep}/> </td>  
             </tr>
             <tr>
-              <td> <DetailsCard disabled={true} type="Person" data={["Application Request"].concat(Object.values(this.props.applicant))}/> </td>
-              <td> <DetailsCard disabled={true} type="Person" data={["Supplier Request"].concat(Object.values(this.props.beneficiary))}/> </td>
+              <td> <DetailsCard disabled={true} type="Person" data={["Application Request"].concat(Object.values(this.props.charge))}/> </td>
+              <td> <DetailsCard disabled={true} type="Person" data={["Supplier Request"].concat(Object.values(this.props.payment))}/> </td>
               <td> <DetailsCard type="Product" data={["Product Details"].concat(Object.values(productDetails))} canEdit={this.state.isApply} user={this.state.user}/> </td>
               <td className="blockchainCell" rowspan="2"> <BlockChainDisplay transactions={this.state.transactions}/> </td>
             </tr>
@@ -428,8 +307,8 @@ class LetterOfCredit extends Component {
 
 const mapStateToProps = state => {
   return {
-    applicant: state.getLetterInputReducer.applicant,
-    beneficiary: state.getLetterInputReducer.beneficiary,
+    charge: state.getLetterInputReducer.charge,
+    payment: state.getLetterInputReducer.payment,
     productDetails: state.getLetterInputReducer.productDetails,
     rules: state.getLetterInputReducer.rules
   };

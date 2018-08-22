@@ -88,15 +88,7 @@ class LoCCard extends Component {
   }
 
   generateStatus(letter) {
-    let status = '';
-    if (letter.status === 'AWAITING_APPROVAL') {
-      status = 'Awaiting Approval';
-    } else if (letter.status === 'READY_FOR_PAYMENT'){
-      status = 'Payment Made';
-    }
-    else {
-      status = letter.status.toUpperCase();
-    }
+    let status = letter.status.toUpperCase();
     return status.toUpperCase();
   }
 

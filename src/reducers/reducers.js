@@ -31,8 +31,7 @@ const initialState = {
     type: "None",
     quantity: 0,
     pricePerUnit: 0,
-    total: 0,
-    payment_date: "String"
+    total: 0
   },
   rules: [
     {ruleText: "The correct quantity of product has been delivered."},

@@ -47,7 +47,6 @@ class DetailsCard extends Component {
         quantity: parseInt(this.state.data[2], 10),
         pricePerUnit: parseFloat(this.state.data[3], 10),
         total: parseFloat(this.state.data[2]*this.state.data[3], 10),
-		payment_date: this.state.data[5]
       });
     }
   }
