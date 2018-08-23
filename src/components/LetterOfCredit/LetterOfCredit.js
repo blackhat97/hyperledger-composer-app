@@ -282,8 +282,8 @@ class LetterOfCredit extends Component {
               <td colspan="2"> <Stepper steps= {['Letter Application','Goods Shipped','Shipment Accepted']} activeStep={activeStep}/> </td>  
             </tr>
             <tr>
-              <td> <DetailsCard disabled={true} type="Person" data={["Application Request"].concat(Object.values(this.props.charge))}/> </td>
-              <td> <DetailsCard disabled={true} type="Person" data={["Supplier Request"].concat(Object.values(this.props.payment))}/> </td>
+              <td> <DetailsCard disabled={true} type="Person" data={["청구요구"].concat(Object.values(this.props.charge))}/> </td>
+              <td> <DetailsCard disabled={true} type="Person" data={["지급요구"].concat(Object.values(this.props.payment))}/> </td>
               <td> <DetailsCard type="Product" data={["Product Details"].concat(Object.values(productDetails))} canEdit={this.state.isApply} user={this.state.user}/> </td>
               <td className="blockchainCell" rowspan="2"> <BlockChainDisplay transactions={this.state.transactions}/> </td>
             </tr>

@@ -16,16 +16,16 @@ import * as actions from '../actions/actions'
 
 const initialState = {
   charge: {
-    name: 'Alice Hamilton',
-    companyName: 'QuickFix IT',
-    bankName: 'Bank of Dinero',
-    account: '123'
+    name: '조대리',
+    companyName: 'A사',
+    bankName: '은행A',
+    account: '18414-53251'
   },
   payment: {
-    name: 'Bob Appleton',
-    companyName: 'Conga Computers',
-    bankName: 'Eastwood Banking',
-    account: '122'
+    name: '서부장',
+    companyName: 'B사',
+    bankName: '은행B',
+    account: '69793-10110'
   },
   productDetails: {
     type: "None",
